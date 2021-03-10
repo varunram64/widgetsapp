@@ -3,7 +3,37 @@ import axios from 'axios';
 
 const Search = () => {
     const [term, setTerm] = useState("");
+    const [debouncedTerm, setDebouncedTerm] = useState(term);
     const [results, setResults] = useState([]);
+
+    useEffect(() => {
+        const timerId = setTimeout(() => {
+            setDebouncedTerm(term)
+        }, 1000);
+
+        return () => {
+            clearTimeout(timerId);
+        };
+    }, [term]);
+
+    useEffect(() => {
+        const search = async () => {
+            const { data } = await axios('https://en.wikipedia.org/w/api.php', {
+                params: {
+                    action: "query",
+                    list:"search",
+                    origin: "*",
+                    srsearch:debouncedTerm,
+                    format:"json" 
+                }
+            });
+
+            if(data && data.query)
+                setResults(data.query.search);
+        };
+
+        search();
+    }, [debouncedTerm]);
 
     // useEffect(() => {
     //     console.log("Only initialize first time");
@@ -14,7 +44,7 @@ const Search = () => {
     // });
 
     //Initialize first time and also at rerender when text changes
-    useEffect(() => {
+    // useEffect(() => {
         // One way of calling async functions
         // (async () => {
         //     if(term) {
@@ -32,35 +62,35 @@ const Search = () => {
         //     }
         // })();
 
-        const search = async () => {
-            const { data } = await axios('https://en.wikipedia.org/w/api.php', {
-                params: {
-                    action: "query",
-                    list:"search",
-                    origin: "*",
-                    srsearch:{term},
-                    format:"json" 
-                }
-            });
+    //     const search = async () => {
+    //         const { data } = await axios('https://en.wikipedia.org/w/api.php', {
+    //             params: {
+    //                 action: "query",
+    //                 list:"search",
+    //                 origin: "*",
+    //                 srsearch:{term},
+    //                 format:"json" 
+    //             }
+    //         });
 
-            setResults(data.query.search);
-        };
+    //         setResults(data.query.search);
+    //     };
 
-        if(term && !results){
-            search();
-        }
-        else{
-            const timeoutid = setTimeout(() => {
-                if(term){
-                    search();
-                }
-            }, 1000);
+    //     if(debouncedTerm && !results){
+    //         search();
+    //     }
+    //     else{
+    //         const timeoutid = setTimeout(() => {
+    //             if(term){
+    //                 search();
+    //             }
+    //         }, 1000);
             
-            return () => {
-                clearTimeout(timeoutid)
-            };
-        }
-    }, [term]);
+    //         return () => {
+    //             clearTimeout(timeoutid)
+    //         };
+    //     }
+    // }, [term, results.length]);
 
     const renderedresults = results.map((item) => {
         return (
@@ -68,7 +98,7 @@ const Search = () => {
                 <div className="right floated content">
                     <a className="ui button"
                     href={`https://en.wikipedia.org?curid=${item.pageid}`}
-                    target="_blank">
+                    target="_blank" rel="noreferrer">
                         Go
                     </a>
                 </div>
